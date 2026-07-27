@@ -6,9 +6,10 @@ import random
 import string
 from datetime import datetime, timedelta
 import os
+import threading
 
 # ================= CONFIG =================
-BOT_TOKEN = "7991022648:AAFa7RhrVaaTMHktj2Nwjh10d5-al_K-Y6s"
+BOT_TOKEN = "7991022648:AAFa7RhrVaaTMHktj2Nwjh10d5-al_K-Y6s"  # ✅ New Token
 NUMBER_API = "https://patel-number-api.vercel.app/number"
 TG_API = "https://new-api-backup.vercel.app/?type=tg_num&key=swayam&query="
 CAR_FULL_API = "https://vechile-info-cyan.vercel.app/api/vehicle/"
@@ -140,11 +141,6 @@ def send_file(chat_id, filename, data, reply_to=None):
         print(f"❌ Send file error: {e}")
         return False
 
-# ============ INLINE KEYBOARD WITH RED CANCEL BUTTON ============
-def get_inline_cancel():
-    markup = {"inline_keyboard": [[{"text": "❌ ᴄᴀɴᴄᴇʟ", "callback_data": "cancel"}]]}
-    return markup
-
 # ============ KEYBOARDS ============
 def get_main_keyboard():
     return {
@@ -227,10 +223,19 @@ def format_number_anime(data, number):
     return result
 
 def format_tg_anime(data, query):
-    """Format Telegram info - Updated for new API (without expiry & requests)"""
+    """Format Telegram info - Without expiry & requests"""
     
     if not data.get("status") == "success":
         error_msg = data.get("error", "No information found")
+        
+        if query.isdigit():
+            return f"""❌ ɴᴏ ɪɴғᴏʀᴍᴀᴛɪᴏɴ ғᴏᴜɴᴅ ғᴏʀ ɪᴅ: {query}
+───────────────
+💡 ᴛɪᴘ: ᴛʀʏ ᴜsɪɴɢ ᴜsᴇʀɴᴀᴍᴇ ɪɴsᴛᴇᴀᴅ
+📝 ᴇxᴀᴍᴘʟᴇ: @ᴜsᴇʀɴᴀᴍᴇ
+
+⚡ {DEVELOPER}"""
+        
         return f"""❌ ɴᴏ ɪɴғᴏʀᴍᴀᴛɪᴏɴ ғᴏᴜɴᴅ
 ───────────────
 📝 {error_msg}
@@ -238,18 +243,14 @@ def format_tg_anime(data, query):
 ⚡ {DEVELOPER}"""
     
     results = data.get("results", {})
-    
-    # Get data from API
     number = results.get('number', 'ɴ/ᴀ')
     country = results.get('country', 'ɴ/ᴀ')
     country_code = results.get('country_code', 'ɴ/ᴀ')
     cached = results.get('cached', False)
     
-    # Username and ID from query
     username = query if query.startswith('@') else f'@{query}'
     tg_id = query if query.isdigit() else 'ɴ/ᴀ'
     
-    # Build response
     response = f"""👤 𝑻𝑮 𝑰𝑵𝑭𝑶
 ───────────────
 
@@ -385,7 +386,7 @@ def get_number_info(number):
         return {"success": False}
 
 def get_tg_info(query):
-    """Get Telegram user info - Updated for new API"""
+    """Get Telegram user info - Supports both ID and Username"""
     try:
         query = query.strip()
         if query.startswith("@"):
@@ -396,8 +397,11 @@ def get_tg_info(query):
         
         if resp.status_code == 200:
             data = resp.json()
-            if data.get("status") == "success" and data.get("results", {}).get("success"):
-                return data
+            if data.get("status") == "success":
+                results = data.get("results", {})
+                if results.get("number"):
+                    return data
+                return {"status": "failed", "error": "Number not found"}
             return {"status": "failed", "error": data.get("error", "No data found")}
         return {"status": "failed"}
     except:
@@ -436,14 +440,9 @@ def is_valid_number(text):
     return text.isdigit() and len(text) == 10
 
 def is_valid_username_or_id(text):
-    """Check if input is valid Telegram username or numeric ID"""
     text = text.strip()
-    
-    # Check if it's a numeric ID (digits only, at least 5 digits)
     if text.isdigit() and len(text) >= 5:
         return True
-    
-    # Check if it's a username
     if text.startswith("@"):
         text = text[1:]
     return len(text) >= 3 and re.match(r'^[a-zA-Z0-9_]+$', text) is not None
@@ -467,6 +466,28 @@ def send_admin_panel(chat_id):
 ───────────────
 ⚡ {DEVELOPER}"""
     send_msg(chat_id, text, reply_markup=get_admin_keyboard(), parse_mode="HTML")
+
+# ============ WEB SERVER FOR RAILWAY ============
+try:
+    from flask import Flask
+    app = Flask(__name__)
+    
+    @app.route('/')
+    def home():
+        return "🤖 Bot is running!"
+    
+    @app.route('/health')
+    def health():
+        return "OK"
+    
+    def run_web():
+        app.run(host='0.0.0.0', port=8080)
+    
+    web_thread = threading.Thread(target=run_web, daemon=True)
+    web_thread.start()
+    print("🌐 Web server started on port 8080")
+except:
+    print("⚠️ Web server not started (Flask not installed)")
 
 # ============ MAIN LOOP ============
 def main():

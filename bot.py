@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import os
 
 # ================= CONFIG =================
-BOT_TOKEN = "7991022648:AAG4tqsZZIi34ilvpRFH785_rz8bRPnJODk"
+BOT_TOKEN = "7991022648:AAFa7RhrVaaTMHktj2Nwjh10d5-al_K-Y6s"
 NUMBER_API = "https://patel-number-api.vercel.app/number"
 TG_API = "https://new-api-backup.vercel.app/?type=tg_num&key=swayam&query="
 CAR_FULL_API = "https://vechile-info-cyan.vercel.app/api/vehicle/"
